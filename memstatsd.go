@@ -50,25 +50,27 @@ func (m *MemStatsd) Run(d time.Duration) {
 }
 
 func (m *MemStatsd) pushMemStats() {
-	stats, delta := m.snapshotMemStats()
+	latest, delta := m.snapshotMemStats()
 	if m.debug {
 		fmt.Println("pushMemStats @", time.Now())
 	}
 
-	m.statsd.Gauge(m.prefix+"alloc", int(stats.Alloc))
-	m.statsd.Gauge(m.prefix+"total_alloc", int(stats.TotalAlloc))
-	m.statsd.Gauge(m.prefix+"sys", int(stats.Sys))
-	m.statsd.Gauge(m.prefix+"lookups", int(stats.Lookups))
-	m.statsd.Gauge(m.prefix+"mallocs", int(stats.Mallocs))
-	m.statsd.Gauge(m.prefix+"frees", int(stats.Frees))
-	m.statsd.Gauge(m.prefix+"heap_alloc", int(stats.HeapAlloc))
-	m.statsd.Gauge(m.prefix+"heap_sys", int(stats.HeapSys))
-	m.statsd.Gauge(m.prefix+"heap_idle", int(stats.HeapIdle))
-	m.statsd.Gauge(m.prefix+"heap_inuse", int(stats.HeapInuse))
-	m.statsd.Gauge(m.prefix+"heap_released", int(stats.HeapReleased))
-	m.statsd.Gauge(m.prefix+"heap_objects", int(stats.HeapObjects))
-	m.statsd.Gauge(m.prefix+"num_gc", int(stats.NumGC))
-	m.statsd.Timing(m.prefix+"pause_gc", stats.PauseGC)
+	m.statsd.Gauge(m.prefix+"alloc", int(latest.Alloc))
+	m.statsd.Gauge(m.prefix+"total_alloc", int(latest.TotalAlloc))
+	m.statsd.Gauge(m.prefix+"sys", int(latest.Sys))
+	m.statsd.Gauge(m.prefix+"lookups", int(latest.Lookups))
+	m.statsd.Gauge(m.prefix+"mallocs", int(latest.Mallocs))
+	m.statsd.Gauge(m.prefix+"frees", int(latest.Frees))
+	m.statsd.Gauge(m.prefix+"heap_alloc", int(latest.HeapAlloc))
+	m.statsd.Gauge(m.prefix+"heap_sys", int(latest.HeapSys))
+	m.statsd.Gauge(m.prefix+"heap_idle", int(latest.HeapIdle))
+	m.statsd.Gauge(m.prefix+"heap_inuse", int(latest.HeapInuse))
+	m.statsd.Gauge(m.prefix+"heap_released", int(latest.HeapReleased))
+	m.statsd.Gauge(m.prefix+"heap_objects", int(latest.HeapObjects))
+	m.statsd.Gauge(m.prefix+"num_gc", int(latest.NumGC))
+	m.statsd.Gauge(m.prefix+"num_goroutine", latest.NumGoroutine)
+
+	m.statsd.Timing(m.prefix+"pause_gc", latest.PauseGC)
 
 	m.statsd.Gauge(m.prefix+"alloc.delta", int(delta.Alloc))
 	m.statsd.Gauge(m.prefix+"total_alloc.delta", int(delta.TotalAlloc))
@@ -83,6 +85,7 @@ func (m *MemStatsd) pushMemStats() {
 	m.statsd.Gauge(m.prefix+"heap_released.delta", int(delta.HeapReleased))
 	m.statsd.Gauge(m.prefix+"heap_objects.delta", int(delta.HeapObjects))
 	m.statsd.Gauge(m.prefix+"num_gc.delta", int(delta.NumGC))
+	m.statsd.Gauge(m.prefix+"num_goroutine.delta", delta.NumGoroutine)
 
 	m.statsd.Timing(m.prefix+"pause_gc.delta", delta.PauseGC)
 }
@@ -117,6 +120,9 @@ type MemStats struct {
 	// GC stats
 	NumGC   uint32
 	PauseGC time.Duration
+
+	// Misc
+	NumGoroutine int
 }
 
 func (m *MemStatsd) snapshotAllocLatency() (latency time.Duration, delta time.Duration) {
@@ -155,6 +161,7 @@ func (m *MemStatsd) snapshotMemStats() (latest *MemStats, delta MemStats) {
 		HeapReleased: stats.HeapReleased,
 		HeapObjects:  stats.HeapObjects,
 		NumGC:        stats.NumGC,
+		NumGoroutine: runtime.NumGoroutine(),
 		PauseGC:      time.Duration(stats.PauseNs[(stats.NumGC+255)%256]),
 	}
 
@@ -176,6 +183,7 @@ func (m *MemStatsd) snapshotMemStats() (latest *MemStats, delta MemStats) {
 		HeapReleased: latest.HeapReleased - m.previous.HeapReleased,
 		HeapObjects:  latest.HeapObjects - m.previous.HeapObjects,
 		NumGC:        latest.NumGC - m.previous.NumGC,
+		NumGoroutine: latest.NumGoroutine - m.previous.NumGoroutine,
 		PauseGC:      latest.PauseGC - m.previous.PauseGC,
 	}
 	m.previous = latest
