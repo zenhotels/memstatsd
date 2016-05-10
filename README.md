@@ -4,7 +4,7 @@ Package memstatsd implements a simple to use reporting tool that sends actual ru
 
 ### Example
 
-```
+```go
 type statter struct{}
 
 func (s statter) Timing(bucket string, d time.Duration) {
