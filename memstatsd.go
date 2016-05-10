@@ -56,7 +56,6 @@ func (m *MemStatsd) pushMemStats() {
 	}
 
 	m.statsd.Gauge(m.prefix+"alloc", int(latest.Alloc))
-	m.statsd.Gauge(m.prefix+"total_alloc", int(latest.TotalAlloc))
 	m.statsd.Gauge(m.prefix+"sys", int(latest.Sys))
 	m.statsd.Gauge(m.prefix+"lookups", int(latest.Lookups))
 	m.statsd.Gauge(m.prefix+"mallocs", int(latest.Mallocs))
@@ -73,7 +72,6 @@ func (m *MemStatsd) pushMemStats() {
 	m.statsd.Timing(m.prefix+"pause_gc", latest.PauseGC)
 
 	m.statsd.Gauge(m.prefix+"alloc.delta", int(delta.Alloc))
-	m.statsd.Gauge(m.prefix+"total_alloc.delta", int(delta.TotalAlloc))
 	m.statsd.Gauge(m.prefix+"sys.delta", int(delta.Sys))
 	m.statsd.Gauge(m.prefix+"lookups.delta", int(delta.Lookups))
 	m.statsd.Gauge(m.prefix+"mallocs.delta", int(delta.Mallocs))
@@ -102,12 +100,11 @@ func (m *MemStatsd) pushAllocLatency() {
 
 type MemStats struct {
 	// General stats
-	Alloc      uint64 // bytes allocated and not yet freed
-	TotalAlloc uint64 // bytes allocated (even if freed)
-	Sys        uint64 // bytes obtained from system (sum of XxxSys below)
-	Lookups    uint64 // number of pointer lookups
-	Mallocs    uint64 // number of mallocs
-	Frees      uint64 // number of frees
+	Alloc   uint64 // bytes allocated and not yet freed
+	Sys     uint64 // bytes obtained from system (sum of XxxSys below)
+	Lookups uint64 // number of pointer lookups
+	Mallocs uint64 // number of mallocs
+	Frees   uint64 // number of frees
 
 	// Heap stats
 	HeapAlloc    uint64 // bytes allocated and not yet freed (same as Alloc above)
@@ -149,7 +146,6 @@ func (m *MemStatsd) snapshotMemStats() (latest *MemStats, delta MemStats) {
 
 	latest = &MemStats{
 		Alloc:        stats.Alloc,
-		TotalAlloc:   stats.TotalAlloc,
 		Sys:          stats.Sys,
 		Lookups:      stats.Lookups,
 		Mallocs:      stats.Mallocs,
@@ -171,7 +167,6 @@ func (m *MemStatsd) snapshotMemStats() (latest *MemStats, delta MemStats) {
 	}
 	delta = MemStats{
 		Alloc:        latest.Alloc - m.previous.Alloc,
-		TotalAlloc:   latest.TotalAlloc - m.previous.TotalAlloc,
 		Sys:          latest.Sys - m.previous.Sys,
 		Lookups:      latest.Lookups - m.previous.Lookups,
 		Mallocs:      latest.Mallocs - m.previous.Mallocs,
